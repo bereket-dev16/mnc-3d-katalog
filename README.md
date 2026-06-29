@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MNC Ürün Evreni
 
-## Getting Started
+MNC İlaç ürünleri için Next.js App Router, TypeScript ve Tailwind CSS ile hazırlanmış full-screen ürün seçim sahnesi. Bu revizyonda klasik katalog, kategori filtresi, ürün grid’i ve ürün detay sayfaları yoktur; deneyim tek bir hero/canvas hissi veren `/urun-katalog` ekranında çalışır.
 
-First, run the development server:
+## Local Çalıştırma
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Tarayıcıda [http://localhost:3000](http://localhost:3000) adresini açın. `/` otomatik olarak `/urun-katalog` sayfasına yönlenir.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Kontrol komutları:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm lint
+pnpm build
+```
 
-## Learn More
+## Ürün Görselleri
 
-To learn more about Next.js, take a look at the following resources:
+Transparan PNG ürün görsellerini şu klasöre ekleyin:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```txt
+public/products/
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Bu sürümde kullanılan dosya adları:
 
-## Deploy on Vercel
+- `UMBRELLA-MAGNEZYUM.png`
+- `PAPIOMEX.png`
+- `PREFOLIC-PLUS.png`
+- `PLENTYFERT-MEN.png`
+- `PLENTYFERT-WOMEN.png`
+- `PREFOLIC.png`
+- `UMBRELLA-PLUS-PREMIUM.png`
+- `TEST-PLUS.png`
+- `JOINT-1500.png`
+- `UMBRELLA-PROBIYOTIK.png`
+- `OMEGA-3.png`
+- `OMEGA-3-6-9.png`
+- `UMBRELLA-B12.png`
+- `COCOSH-PLUS.png`
+- `PLENTYFERT-SACHET.png`
+- `UMBRELLA-SITIKOLIN-OMEGA-3.png`
+- `UMBRELLA-KIDS.png`
+- `UMBRELLA-VITAMIN-C.png`
+- `WAGIBOREX.png`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Görsel yoksa sahne kırılmaz; ürün figürü yerine cam/transparan ambalaj hissi veren fallback mockup gösterilir.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Ürün Datası
+
+Ürünler buradan düzenlenir:
+
+```txt
+src/data/products.ts
+```
+
+`externalUrl` alanları MNC ürün sayfalarındaki mevcut ürün URL’lerine bağlandı. Ürün linkleri değişirse her ürün için bu alanı güncelleyin.
+
+## Route Yapısı
+
+- `/urun-katalog`: full-screen interaktif ürün seçim sahnesi.
+- `/sitemap.xml`: katalog sayfası için sitemap.
+
+Şimdilik `/urunler/[slug]` ürün detay sayfaları kullanılmaz.
+
+## Vercel Deploy
+
+1. Projeyi GitHub, GitLab veya Bitbucket reposuna gönderin.
+2. Vercel üzerinde yeni proje olarak içe aktarın.
+3. Build komutu: `pnpm build`
+4. Install komutu: `pnpm install`
+5. Final domain hazır olduğunda `NEXT_PUBLIC_SITE_URL=https://alanadiniz.com` ortam değişkenini ekleyin.
+
+## Gelecek 3D Hazırlığı
+
+Bu sürüm Three.js, WebGL, GLB veya model-viewer kullanmaz. İleride gerçek 3D dosyalar hazırlanırsa sadece ilgili ürünlerde lazy-loaded ayrı bir 3D viewer eklenebilir. Mevcut v1 deneyimi hafif, hızlı ve 2D PNG tabanlı kalmalıdır.
