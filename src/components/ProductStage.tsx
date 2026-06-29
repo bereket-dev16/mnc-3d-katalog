@@ -64,6 +64,7 @@ export function ProductStage({ products }: ProductStageProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [readyModels, setReadyModels] = useState<Record<string, true>>({});
+  const [shouldAutoRotateModel, setShouldAutoRotateModel] = useState(false);
   const lockRef = useRef(false);
   const pointerStartX = useRef<number | null>(null);
   const preloadedModelsRef = useRef<Set<string>>(new Set());
@@ -149,6 +150,33 @@ export function ProductStage({ products }: ProductStageProps) {
     query.addEventListener("change", handleChange);
 
     return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia(
+      "(min-width: 900px) and (hover: hover) and (pointer: fine)",
+    );
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+
+    const updateAutoRotatePreference = () => {
+      setShouldAutoRotateModel(
+        desktopQuery.matches && !reducedMotionQuery.matches,
+      );
+    };
+
+    updateAutoRotatePreference();
+    desktopQuery.addEventListener("change", updateAutoRotatePreference);
+    reducedMotionQuery.addEventListener("change", updateAutoRotatePreference);
+
+    return () => {
+      desktopQuery.removeEventListener("change", updateAutoRotatePreference);
+      reducedMotionQuery.removeEventListener(
+        "change",
+        updateAutoRotatePreference,
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -273,6 +301,7 @@ export function ProductStage({ products }: ProductStageProps) {
           data-ready={activeModelReady ? "true" : "false"}
         >
           <ProductModelViewer
+            autoRotate={shouldAutoRotateModel}
             isReady={activeModelReady}
             label={activeProduct.name}
             onReady={handleModelReady}

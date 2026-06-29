@@ -7,6 +7,7 @@ import { Box3, Vector3 } from "three";
 import type { Group } from "three";
 
 type ProductModelViewerProps = {
+  autoRotate?: boolean;
   isReady: boolean;
   label: string;
   onReady: (src: string) => void;
@@ -17,6 +18,9 @@ type ModelAssetProps = {
   src: string;
   onLoaded: (src: string) => void;
 };
+
+const defaultCameraPosition: [number, number, number] = [0, 0, 4.85];
+const defaultOrbitTarget: [number, number, number] = [0, -0.08, 0];
 
 function ModelAsset({ onLoaded, src }: ModelAssetProps) {
   const gltf = useGLTF(src) as unknown as { scene: Group };
@@ -69,11 +73,53 @@ function SceneInvalidator({
   return null;
 }
 
-function DemandOrbitControls() {
+function CameraResetter({ src }: Pick<ProductModelViewerProps, "src">) {
+  const camera = useThree((state) => state.camera);
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    if (!src) return;
+
+    camera.position.set(...defaultCameraPosition);
+    camera.lookAt(...defaultOrbitTarget);
+    camera.updateMatrixWorld();
+    invalidate();
+
+    const frameId = window.requestAnimationFrame(() => invalidate());
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [camera, invalidate, src]);
+
+  return null;
+}
+
+const autoRotateFrameMs = 1000 / 24;
+
+function AutoRotateTicker({ enabled }: { enabled: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+
+      invalidate();
+    }, autoRotateFrameMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [enabled, invalidate]);
+
+  return null;
+}
+
+function DemandOrbitControls({ autoRotate }: { autoRotate: boolean }) {
   const invalidate = useThree((state) => state.invalidate);
 
   return (
     <OrbitControls
+      autoRotate={autoRotate}
+      autoRotateSpeed={0.36}
       enableDamping={false}
       enablePan={false}
       enableZoom
@@ -84,18 +130,21 @@ function DemandOrbitControls() {
       minPolarAngle={Math.PI * 0.28}
       onChange={() => invalidate()}
       rotateSpeed={0.75}
-      target={[0, -0.08, 0]}
+      target={defaultOrbitTarget}
       zoomSpeed={0.65}
     />
   );
 }
 
 export function ProductModelViewer({
+  autoRotate = false,
   isReady,
   label,
   onReady,
   src,
 }: ProductModelViewerProps) {
+  const shouldAutoRotate = Boolean(src && isReady && autoRotate);
+
   return (
     <div
       className="stage-model-viewer"
@@ -111,7 +160,7 @@ export function ProductModelViewer({
       onWheel={(event) => event.stopPropagation()}
     >
       <Canvas
-        camera={{ fov: 34, position: [0, 0, 4.85] }}
+        camera={{ fov: 34, position: defaultCameraPosition }}
         className="stage-model-canvas"
         dpr={[1, 1.25]}
         frameloop="demand"
@@ -126,6 +175,8 @@ export function ProductModelViewer({
           isReady={isReady}
           src={src}
         />
+        <CameraResetter src={src} />
+        <AutoRotateTicker enabled={shouldAutoRotate} />
         <ambientLight intensity={1.45} />
         <hemisphereLight
           color="#ffffff"
@@ -140,7 +191,12 @@ export function ProductModelViewer({
             />
           ) : null}
         </Suspense>
-        {src ? <DemandOrbitControls /> : null}
+        {src ? (
+          <DemandOrbitControls
+            key={src}
+            autoRotate={shouldAutoRotate}
+          />
+        ) : null}
       </Canvas>
     </div>
   );

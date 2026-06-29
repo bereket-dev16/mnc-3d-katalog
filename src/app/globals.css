@@ -577,37 +577,37 @@ body {
 
 @media (min-width: 640px) and (max-width: 899px) {
   .stage-ghost {
-    top: clamp(6rem, 12vh, 9rem);
-    font-size: clamp(4.8rem, 18vw, 8rem);
+    top: clamp(6rem, 12vh, 8rem);
+    font-size: clamp(4.1rem, 15vw, 6.8rem);
   }
 
   .stage-item[data-role="center"] {
     bottom: 28vh;
-    height: min(52vh, 34rem);
-    width: min(47vh, 31rem);
-    transform: translateX(-50%) scale(0.98);
+    height: min(44vh, 28rem);
+    width: min(39vh, 25.5rem);
+    transform: translateX(-50%) scale(0.92);
   }
 
   .stage-item[data-role="left"] {
     bottom: 32vh;
     left: 20%;
-    height: 19vh;
-    width: 17.5vh;
-    transform: translateX(-50%) scale(0.9) rotate(-4deg);
+    height: 16vh;
+    width: 14.5vh;
+    transform: translateX(-50%) scale(0.84) rotate(-4deg);
   }
 
   .stage-item[data-role="right"] {
     bottom: 32vh;
     left: 80%;
-    height: 19vh;
-    width: 17.5vh;
-    transform: translateX(-50%) scale(0.9) rotate(4deg);
+    height: 16vh;
+    width: 14.5vh;
+    transform: translateX(-50%) scale(0.84) rotate(4deg);
   }
 
   .stage-item[data-role="back"] {
     bottom: 34vh;
-    height: 15vh;
-    width: 14vh;
+    height: 13vh;
+    width: 12vh;
   }
 
   .stage-info-stack {
@@ -623,8 +623,8 @@ body {
   }
 
   .stage-ghost {
-    top: clamp(8.6rem, 22vh, 11.4rem);
-    font-size: clamp(3rem, 18vw, 5.6rem);
+    top: clamp(7.4rem, 19vh, 9.8rem);
+    font-size: clamp(2.55rem, 15vw, 4.55rem);
   }
 
   .stage-floor {
@@ -633,33 +633,33 @@ body {
 
   .stage-item[data-role="center"] {
     bottom: 32vh;
-    height: min(41vh, 21.5rem);
-    width: min(37vh, 19.5rem);
-    transform: translateX(-50%) scale(1.04);
+    height: min(34vh, 18rem);
+    width: min(30vh, 16rem);
+    transform: translateX(-50%) scale(0.94);
   }
 
   .stage-item[data-role="left"] {
     bottom: 36vh;
     left: 17%;
-    height: 16vh;
-    width: 14.5vh;
+    height: 13.5vh;
+    width: 12vh;
     opacity: 0.5;
-    transform: translateX(-50%) scale(0.9) rotate(-4deg);
+    transform: translateX(-50%) scale(0.82) rotate(-4deg);
   }
 
   .stage-item[data-role="right"] {
     bottom: 36vh;
     left: 83%;
-    height: 16vh;
-    width: 14.5vh;
+    height: 13.5vh;
+    width: 12vh;
     opacity: 0.5;
-    transform: translateX(-50%) scale(0.9) rotate(4deg);
+    transform: translateX(-50%) scale(0.82) rotate(4deg);
   }
 
   .stage-item[data-role="back"] {
     bottom: 39vh;
-    height: 13vh;
-    width: 12vh;
+    height: 11vh;
+    width: 10vh;
     opacity: 0.22;
     transform: translateX(-50%) scale(0.75);
   }
