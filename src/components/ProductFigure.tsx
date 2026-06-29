@@ -111,7 +111,7 @@ export function ProductFigure({
                   ? "(max-width: 768px) 74vw, 44vw"
                   : "(max-width: 768px) 32vw, 20vw"
               }
-              className="stage-product-image select-none object-contain object-bottom drop-shadow-[0_54px_70px_rgba(0,0,0,0.32)]"
+              className="stage-product-image select-none object-contain object-bottom"
               onError={() => setImageFailed(true)}
             />
           ) : (

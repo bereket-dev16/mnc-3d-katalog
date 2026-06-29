@@ -13,7 +13,7 @@ type ProductStageProps = {
   products: ProductWithImage[];
 };
 
-const animationMs = 720;
+const animationMs = 560;
 
 type IdleWindow = Window & {
   cancelIdleCallback?: (handle: number) => void;
@@ -36,7 +36,10 @@ function getRole(index: number, activeIndex: number, total: number): FigureRole 
   return "hidden";
 }
 
-function getModelPreloadOrder(products: ProductWithImage[], activeIndex: number) {
+function getNeighborModelPreloadOrder(
+  products: ProductWithImage[],
+  activeIndex: number,
+) {
   const orderedModels: string[] = [];
   const seen = new Set<string>();
 
@@ -50,16 +53,9 @@ function getModelPreloadOrder(products: ProductWithImage[], activeIndex: number)
     orderedModels.push(model);
   }
 
-  addModelAt(activeIndex);
   addModelAt(activeIndex - 1);
   addModelAt(activeIndex + 1);
-
-  products.forEach((product) => {
-    if (!product.model || seen.has(product.model)) return;
-
-    seen.add(product.model);
-    orderedModels.push(product.model);
-  });
+  addModelAt(activeIndex + 2);
 
   return orderedModels;
 }
@@ -70,6 +66,7 @@ export function ProductStage({ products }: ProductStageProps) {
   const [readyModels, setReadyModels] = useState<Record<string, true>>({});
   const lockRef = useRef(false);
   const pointerStartX = useRef<number | null>(null);
+  const preloadedModelsRef = useRef<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reducedMotionRef = useRef(false);
 
@@ -119,6 +116,13 @@ export function ProductStage({ products }: ProductStageProps) {
     });
   }, []);
 
+  const preloadModel = useCallback((model: string | undefined) => {
+    if (!model || preloadedModelsRef.current.has(model)) return;
+
+    preloadedModelsRef.current.add(model);
+    useGLTF.preload(model);
+  }, []);
+
   function handlePointerDown(event: PointerEvent<HTMLElement>) {
     pointerStartX.current = event.clientX;
   }
@@ -148,25 +152,49 @@ export function ProductStage({ products }: ProductStageProps) {
   }, []);
 
   useEffect(() => {
-    const preloadModels = () => {
-      getModelPreloadOrder(products, activeIndex).forEach((model) => {
-        useGLTF.preload(model);
-      });
-    };
+    preloadModel(activeProduct.model);
+
+    const idleIds: number[] = [];
+    const timeoutIds: number[] = [];
+    const queue = getNeighborModelPreloadOrder(products, activeIndex);
     const idleWindow = window as IdleWindow;
 
-    if (idleWindow.requestIdleCallback) {
-      const idleId = idleWindow.requestIdleCallback(preloadModels, {
-        timeout: 1200,
-      });
+    const scheduleNext = (index: number) => {
+      const model = queue[index];
 
-      return () => idleWindow.cancelIdleCallback?.(idleId);
-    }
+      if (!model) return;
 
-    const timeoutId = window.setTimeout(preloadModels, 120);
+      const preloadQueuedModel = () => {
+        preloadModel(model);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [activeIndex, products]);
+        const timeoutId = window.setTimeout(() => {
+          scheduleNext(index + 1);
+        }, 360);
+
+        timeoutIds.push(timeoutId);
+      };
+
+      if (idleWindow.requestIdleCallback) {
+        const idleId = idleWindow.requestIdleCallback(preloadQueuedModel, {
+          timeout: 1800,
+        });
+
+        idleIds.push(idleId);
+
+        return;
+      }
+
+      const timeoutId = window.setTimeout(preloadQueuedModel, 420);
+      timeoutIds.push(timeoutId);
+    };
+
+    scheduleNext(0);
+
+    return () => {
+      idleIds.forEach((idleId) => idleWindow.cancelIdleCallback?.(idleId));
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, [activeIndex, activeProduct.model, preloadModel, products]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -224,14 +252,20 @@ export function ProductStage({ products }: ProductStageProps) {
       </div>
 
       <section className="stage-carousel" aria-label="Ürün seçim sahnesi">
-        {products.map((product, index) => (
-          <ProductFigure
-            key={product.slug}
-            modelReady={activeProduct.slug === product.slug && activeModelReady}
-            product={product}
-            role={getRole(index, activeIndex, products.length)}
-          />
-        ))}
+        {products.map((product, index) => {
+          const role = getRole(index, activeIndex, products.length);
+
+          if (role === "hidden") return null;
+
+          return (
+            <ProductFigure
+              key={product.slug}
+              modelReady={activeProduct.slug === product.slug && activeModelReady}
+              product={product}
+              role={role}
+            />
+          );
+        })}
 
         <div
           className="stage-model-slot"

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
 import type { Group } from "three";
@@ -52,6 +52,44 @@ function ModelAsset({ onLoaded, src }: ModelAssetProps) {
   );
 }
 
+function SceneInvalidator({
+  isReady,
+  src,
+}: Pick<ProductModelViewerProps, "isReady" | "src">) {
+  const invalidate = useThree((state) => state.invalidate);
+
+  useEffect(() => {
+    invalidate();
+
+    const frameId = window.requestAnimationFrame(() => invalidate());
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [invalidate, isReady, src]);
+
+  return null;
+}
+
+function DemandOrbitControls() {
+  const invalidate = useThree((state) => state.invalidate);
+
+  return (
+    <OrbitControls
+      enableDamping={false}
+      enablePan={false}
+      enableZoom
+      makeDefault
+      maxDistance={6.4}
+      maxPolarAngle={Math.PI * 0.72}
+      minDistance={3.35}
+      minPolarAngle={Math.PI * 0.28}
+      onChange={() => invalidate()}
+      rotateSpeed={0.75}
+      target={[0, -0.08, 0]}
+      zoomSpeed={0.65}
+    />
+  );
+}
+
 export function ProductModelViewer({
   isReady,
   label,
@@ -75,13 +113,19 @@ export function ProductModelViewer({
       <Canvas
         camera={{ fov: 34, position: [0, 0, 4.85] }}
         className="stage-model-canvas"
-        dpr={[1, 1.75]}
+        dpr={[1, 1.25]}
+        frameloop="demand"
         gl={{
           alpha: true,
-          antialias: true,
+          antialias: false,
           powerPreference: "high-performance",
+          stencil: false,
         }}
       >
+        <SceneInvalidator
+          isReady={isReady}
+          src={src}
+        />
         <ambientLight intensity={1.45} />
         <hemisphereLight
           color="#ffffff"
@@ -96,21 +140,7 @@ export function ProductModelViewer({
             />
           ) : null}
         </Suspense>
-        <OrbitControls
-          autoRotate
-          autoRotateSpeed={0.45}
-          enableDamping
-          enablePan={false}
-          enableZoom
-          makeDefault
-          maxDistance={6.4}
-          maxPolarAngle={Math.PI * 0.72}
-          minDistance={3.35}
-          minPolarAngle={Math.PI * 0.28}
-          rotateSpeed={0.75}
-          target={[0, -0.08, 0]}
-          zoomSpeed={0.65}
-        />
+        {src ? <DemandOrbitControls /> : null}
       </Canvas>
     </div>
   );
