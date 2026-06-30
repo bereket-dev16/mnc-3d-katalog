@@ -66,6 +66,7 @@ export function ProductStage({ products }: ProductStageProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [isTabletViewport, setIsTabletViewport] = useState(false);
+  const [failedModels, setFailedModels] = useState<Record<string, true>>({});
   const [readyModels, setReadyModels] = useState<Record<string, true>>({});
   const [shouldAutoRotateModel, setShouldAutoRotateModel] = useState(false);
   const [suppressedVisualSlug, setSuppressedVisualSlug] = useState<
@@ -79,8 +80,12 @@ export function ProductStage({ products }: ProductStageProps) {
   const reducedMotionRef = useRef(false);
 
   const activeProduct = products[activeIndex];
+  const activeModelSrc =
+    activeProduct.model && !failedModels[activeProduct.model]
+      ? activeProduct.model
+      : undefined;
   const activeModelLoaded = Boolean(
-    activeProduct.model && readyModels[activeProduct.model],
+    activeModelSrc && readyModels[activeModelSrc],
   );
   const activeModelVisible = activeModelLoaded;
 
@@ -135,6 +140,17 @@ export function ProductStage({ products }: ProductStageProps) {
 
   const handleModelReady = useCallback((src: string) => {
     setReadyModels((current) => {
+      if (current[src]) return current;
+
+      return {
+        ...current,
+        [src]: true,
+      };
+    });
+  }, []);
+
+  const handleModelError = useCallback((src: string) => {
+    setFailedModels((current) => {
       if (current[src]) return current;
 
       return {
@@ -226,7 +242,7 @@ export function ProductStage({ products }: ProductStageProps) {
   }, []);
 
   useEffect(() => {
-    preloadModel(activeProduct.model);
+    preloadModel(activeModelSrc);
 
     const idleIds: number[] = [];
     const timeoutIds: number[] = [];
@@ -268,7 +284,7 @@ export function ProductStage({ products }: ProductStageProps) {
       idleIds.forEach((idleId) => idleWindow.cancelIdleCallback?.(idleId));
       timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
     };
-  }, [activeIndex, activeProduct.model, preloadModel, products]);
+  }, [activeIndex, activeModelSrc, preloadModel, products]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -339,7 +355,7 @@ export function ProductStage({ products }: ProductStageProps) {
             <ProductFigure
               key={product.slug}
               hideCenterVisual={
-                activeProduct.slug === product.slug && Boolean(product.model)
+                activeProduct.slug === product.slug && Boolean(activeModelSrc)
               }
               product={product}
               role={role}
@@ -352,7 +368,7 @@ export function ProductStage({ products }: ProductStageProps) {
 
         <div
           className="stage-model-slot"
-          data-active={activeProduct.model ? "true" : "false"}
+          data-active={activeModelSrc ? "true" : "false"}
           data-ready={activeModelVisible ? "true" : "false"}
         >
           <ProductModelViewer
@@ -368,8 +384,9 @@ export function ProductStage({ products }: ProductStageProps) {
             modelOffsetY={
               isCompactViewport ? 0.78 : isTabletViewport ? 0.72 : 0.38
             }
+            onError={handleModelError}
             onReady={handleModelReady}
-            src={activeProduct.model}
+            src={activeModelSrc}
           />
         </div>
       </section>

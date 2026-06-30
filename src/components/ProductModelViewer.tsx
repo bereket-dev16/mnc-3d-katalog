@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
+import { Component, Suspense, useEffect, useMemo } from "react";
+import type { ReactNode } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, Vector3 } from "three";
@@ -13,6 +14,7 @@ type ProductModelViewerProps = {
   modelHeight?: number;
   modelMaxWidth?: number;
   modelOffsetY?: number;
+  onError?: (src: string) => void;
   onReady: (src: string) => void;
   src?: string | null;
 };
@@ -27,6 +29,39 @@ type ModelAssetProps = {
 
 const defaultCameraPosition: [number, number, number] = [0, 0, 4.85];
 const defaultOrbitTarget: [number, number, number] = [0, -0.08, 0];
+
+class ModelLoadBoundary extends Component<
+  {
+    children: ReactNode;
+    onError?: (src: string) => void;
+    src: string | null | undefined;
+  },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    if (this.props.src) {
+      this.props.onError?.(this.props.src);
+    }
+  }
+
+  componentDidUpdate(previousProps: Readonly<{ src: string | null | undefined }>) {
+    if (previousProps.src !== this.props.src && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) return null;
+
+    return this.props.children;
+  }
+}
 
 function ModelAsset({
   modelHeight,
@@ -158,6 +193,7 @@ export function ProductModelViewer({
   modelHeight = 1.92,
   modelMaxWidth,
   modelOffsetY = 0,
+  onError,
   onReady,
   src,
 }: ProductModelViewerProps) {
@@ -201,17 +237,23 @@ export function ProductModelViewer({
           groundColor="#d8d8d8"
           intensity={0.55}
         />
-        <Suspense fallback={null}>
-          {src ? (
-            <ModelAsset
-              modelHeight={modelHeight}
-              modelMaxWidth={modelMaxWidth}
-              modelOffsetY={modelOffsetY}
-              onLoaded={onReady}
-              src={src}
-            />
-          ) : null}
-        </Suspense>
+        <ModelLoadBoundary
+          key={src ?? "empty-model"}
+          onError={onError}
+          src={src}
+        >
+          <Suspense fallback={null}>
+            {src ? (
+              <ModelAsset
+                modelHeight={modelHeight}
+                modelMaxWidth={modelMaxWidth}
+                modelOffsetY={modelOffsetY}
+                onLoaded={onReady}
+                src={src}
+              />
+            ) : null}
+          </Suspense>
+        </ModelLoadBoundary>
         {src ? (
           <DemandOrbitControls
             key={src}
