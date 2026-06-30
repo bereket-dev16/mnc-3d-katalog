@@ -238,7 +238,7 @@ export function ProductModelViewer({
           intensity={0.55}
         />
         <ModelLoadBoundary
-          key={src ?? "empty-model"}
+          key={`model-boundary-${src ?? "empty"}`}
           onError={onError}
           src={src}
         >
@@ -256,7 +256,7 @@ export function ProductModelViewer({
         </ModelLoadBoundary>
         {src ? (
           <DemandOrbitControls
-            key={src}
+            key={`orbit-controls-${src}`}
             autoRotate={shouldAutoRotate}
           />
         ) : null}
