@@ -14,6 +14,7 @@ type ProductStageProps = {
 };
 
 const animationMs = 560;
+const sideVisualSuppressMs = 120;
 
 type IdleWindow = Window & {
   cancelIdleCallback?: (handle: number) => void;
@@ -63,18 +64,25 @@ function getNeighborModelPreloadOrder(
 export function ProductStage({ products }: ProductStageProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
+  const [isTabletViewport, setIsTabletViewport] = useState(false);
   const [readyModels, setReadyModels] = useState<Record<string, true>>({});
   const [shouldAutoRotateModel, setShouldAutoRotateModel] = useState(false);
+  const [suppressedVisualSlug, setSuppressedVisualSlug] = useState<
+    string | null
+  >(null);
   const lockRef = useRef(false);
   const pointerStartX = useRef<number | null>(null);
   const preloadedModelsRef = useRef<Set<string>>(new Set());
+  const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reducedMotionRef = useRef(false);
 
   const activeProduct = products[activeIndex];
-  const activeModelReady = Boolean(
+  const activeModelLoaded = Boolean(
     activeProduct.model && readyModels[activeProduct.model],
   );
+  const activeModelVisible = activeModelLoaded;
 
   const releaseLock = useCallback(() => {
     if (timerRef.current) {
@@ -85,6 +93,7 @@ export function ProductStage({ products }: ProductStageProps) {
       () => {
         lockRef.current = false;
         setIsAnimating(false);
+        setSuppressedVisualSlug(null);
       },
       reducedMotionRef.current ? 80 : animationMs,
     );
@@ -95,6 +104,24 @@ export function ProductStage({ products }: ProductStageProps) {
       if (lockRef.current) return;
 
       lockRef.current = true;
+      if (suppressTimerRef.current) {
+        clearTimeout(suppressTimerRef.current);
+      }
+
+      if (activeProduct.model) {
+        setSuppressedVisualSlug(activeProduct.slug);
+        suppressTimerRef.current = setTimeout(
+          () => {
+            setSuppressedVisualSlug(null);
+            suppressTimerRef.current = null;
+          },
+          reducedMotionRef.current ? 0 : sideVisualSuppressMs,
+        );
+      } else {
+        suppressTimerRef.current = null;
+        setSuppressedVisualSlug(null);
+      }
+
       setIsAnimating(true);
       setActiveIndex((current) => {
         const step = direction === "next" ? 1 : -1;
@@ -103,7 +130,7 @@ export function ProductStage({ products }: ProductStageProps) {
       });
       releaseLock();
     },
-    [products.length, releaseLock],
+    [activeProduct.model, activeProduct.slug, products.length, releaseLock],
   );
 
   const handleModelReady = useCallback((src: string) => {
@@ -140,6 +167,27 @@ export function ProductStage({ products }: ProductStageProps) {
   }
 
   useEffect(() => {
+    const compactQuery = window.matchMedia("(max-width: 639px)");
+    const tabletQuery = window.matchMedia(
+      "(min-width: 640px) and (max-width: 899px)",
+    );
+
+    const updateViewportFit = () => {
+      setIsCompactViewport(compactQuery.matches);
+      setIsTabletViewport(tabletQuery.matches);
+    };
+
+    updateViewportFit();
+    compactQuery.addEventListener("change", updateViewportFit);
+    tabletQuery.addEventListener("change", updateViewportFit);
+
+    return () => {
+      compactQuery.removeEventListener("change", updateViewportFit);
+      tabletQuery.removeEventListener("change", updateViewportFit);
+    };
+  }, []);
+
+  useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
     reducedMotionRef.current = query.matches;
 
@@ -153,9 +201,7 @@ export function ProductStage({ products }: ProductStageProps) {
   }, []);
 
   useEffect(() => {
-    const desktopQuery = window.matchMedia(
-      "(min-width: 900px) and (hover: hover) and (pointer: fine)",
-    );
+    const desktopQuery = window.matchMedia("(min-width: 900px)");
     const reducedMotionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     );
@@ -237,6 +283,10 @@ export function ProductStage({ products }: ProductStageProps) {
 
   useEffect(() => {
     return () => {
+      if (suppressTimerRef.current) {
+        clearTimeout(suppressTimerRef.current);
+      }
+
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
@@ -288,9 +338,14 @@ export function ProductStage({ products }: ProductStageProps) {
           return (
             <ProductFigure
               key={product.slug}
-              modelReady={activeProduct.slug === product.slug && activeModelReady}
+              hideCenterVisual={
+                activeProduct.slug === product.slug && Boolean(product.model)
+              }
               product={product}
               role={role}
+              suppressVisual={
+                isAnimating && suppressedVisualSlug === product.slug
+              }
             />
           );
         })}
@@ -298,12 +353,21 @@ export function ProductStage({ products }: ProductStageProps) {
         <div
           className="stage-model-slot"
           data-active={activeProduct.model ? "true" : "false"}
-          data-ready={activeModelReady ? "true" : "false"}
+          data-ready={activeModelVisible ? "true" : "false"}
         >
           <ProductModelViewer
             autoRotate={shouldAutoRotateModel}
-            isReady={activeModelReady}
+            isReady={activeModelLoaded}
             label={activeProduct.name}
+            modelHeight={
+              isCompactViewport ? 0.92 : isTabletViewport ? 1.18 : 1.55
+            }
+            modelMaxWidth={
+              isCompactViewport ? 0.82 : isTabletViewport ? 1.04 : 1.45
+            }
+            modelOffsetY={
+              isCompactViewport ? 0.78 : isTabletViewport ? 0.72 : 0.38
+            }
             onReady={handleModelReady}
             src={activeProduct.model}
           />

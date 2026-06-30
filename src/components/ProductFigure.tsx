@@ -10,20 +10,25 @@ import { ProductFallbackVisual } from "@/components/ProductFallbackVisual";
 export type FigureRole = "center" | "left" | "right" | "back" | "hidden";
 
 type ProductFigureProps = {
-  modelReady?: boolean;
+  hideCenterVisual?: boolean;
   product: ProductWithImage;
   role: FigureRole;
+  suppressVisual?: boolean;
 };
 
 export function ProductFigure({
-  modelReady = false,
+  hideCenterVisual = false,
   product,
   role,
+  suppressVisual = false,
 }: ProductFigureProps) {
   const figureRef = useRef<HTMLDivElement>(null);
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = product.imageAvailable && !imageFailed;
-  const hasActiveModelReady = Boolean(product.model && role === "center" && modelReady);
+  const shouldHideVisual = Boolean(
+    product.model &&
+      (suppressVisual || (role === "center" && hideCenterVisual)),
+  );
   const hasDepthEffect = product.visualEffect === "tilt-depth" && !product.model;
   const isDepthEffectActive = hasDepthEffect && role === "center";
   const canTilt = isDepthEffectActive;
@@ -80,10 +85,10 @@ export function ProductFigure({
       ref={figureRef}
       className="stage-item"
       data-depth-effect={isDepthEffectActive ? product.visualEffect : undefined}
-      data-has-model={hasActiveModelReady ? "true" : undefined}
-      data-model-ready={hasActiveModelReady ? "true" : undefined}
+      data-has-model={shouldHideVisual ? "true" : undefined}
+      data-model-ready={shouldHideVisual ? "true" : undefined}
       data-role={role}
-      aria-hidden={role !== "center" || hasActiveModelReady}
+      aria-hidden={role !== "center" || shouldHideVisual}
       style={
         {
           "--figure-accent": product.accentColor ?? "rgba(255,255,255,0.85)",
@@ -95,30 +100,34 @@ export function ProductFigure({
       }
       onPointerCancel={resetTilt}
     >
-      <div className="stage-figure-glow" />
-      <div className={isDepthEffectActive ? "stage-figure-shell stage-depth-stage" : "stage-figure-shell"}>
-        <div className={isDepthEffectActive ? "stage-depth-card" : "stage-plain-card"}>
-          {showImage ? (
-            <Image
-              src={product.image}
-              alt={`${product.name} ürün görseli`}
-              fill
-              quality={100}
-              priority={role === "center"}
-              draggable={false}
-              sizes={
-                role === "center"
-                  ? "(max-width: 768px) 74vw, 44vw"
-                  : "(max-width: 768px) 32vw, 20vw"
-              }
-              className="stage-product-image select-none object-contain object-bottom"
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            <ProductFallbackVisual product={product} />
-          )}
-        </div>
-      </div>
+      {shouldHideVisual ? null : (
+        <>
+          <div className="stage-figure-glow" />
+          <div className={isDepthEffectActive ? "stage-figure-shell stage-depth-stage" : "stage-figure-shell"}>
+            <div className={isDepthEffectActive ? "stage-depth-card" : "stage-plain-card"}>
+              {showImage ? (
+                <Image
+                  src={product.image}
+                  alt={`${product.name} ürün görseli`}
+                  fill
+                  quality={100}
+                  priority={role === "center"}
+                  draggable={false}
+                  sizes={
+                    role === "center"
+                      ? "(max-width: 768px) 74vw, 44vw"
+                      : "(max-width: 768px) 32vw, 20vw"
+                  }
+                  className="stage-product-image select-none object-contain object-bottom"
+                  onError={() => setImageFailed(true)}
+                />
+              ) : (
+                <ProductFallbackVisual product={product} />
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

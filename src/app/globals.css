@@ -194,7 +194,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transform: none;
-  transition: opacity 360ms var(--stage-ease);
+  transition: opacity 520ms var(--stage-ease);
   will-change: opacity;
 }
 
@@ -247,7 +247,7 @@ body {
   background: var(--figure-accent);
   filter: blur(1.2rem);
   opacity: 0.34;
-  transition: opacity 320ms var(--stage-ease);
+  transition: opacity 500ms var(--stage-ease);
 }
 
 .stage-figure-shell {
@@ -255,7 +255,7 @@ body {
   width: 100%;
   height: 100%;
   opacity: 1;
-  transition: opacity 320ms var(--stage-ease);
+  transition: opacity 500ms var(--stage-ease);
 }
 
 .stage-item[data-model-ready="true"] .stage-figure-glow,

@@ -10,11 +10,17 @@ type ProductModelViewerProps = {
   autoRotate?: boolean;
   isReady: boolean;
   label: string;
+  modelHeight?: number;
+  modelMaxWidth?: number;
+  modelOffsetY?: number;
   onReady: (src: string) => void;
   src?: string | null;
 };
 
 type ModelAssetProps = {
+  modelHeight: number;
+  modelMaxWidth?: number;
+  modelOffsetY: number;
   src: string;
   onLoaded: (src: string) => void;
 };
@@ -22,25 +28,34 @@ type ModelAssetProps = {
 const defaultCameraPosition: [number, number, number] = [0, 0, 4.85];
 const defaultOrbitTarget: [number, number, number] = [0, -0.08, 0];
 
-function ModelAsset({ onLoaded, src }: ModelAssetProps) {
+function ModelAsset({
+  modelHeight,
+  modelMaxWidth,
+  modelOffsetY,
+  onLoaded,
+  src,
+}: ModelAssetProps) {
   const gltf = useGLTF(src) as unknown as { scene: Group };
   const modelTransform = useMemo(() => {
     const box = new Box3().setFromObject(gltf.scene);
     const size = box.getSize(new Vector3());
     const center = box.getCenter(new Vector3());
-    const targetHeight = 1.92;
     const floorY = -1.05;
-    const scale = size.y > 0 ? targetHeight / size.y : 1;
+    const heightScale = size.y > 0 ? modelHeight / size.y : Infinity;
+    const widthScale =
+      modelMaxWidth && size.x > 0 ? modelMaxWidth / size.x : Infinity;
+    const scale = Math.min(heightScale, widthScale);
+    const safeScale = Number.isFinite(scale) ? scale : 1;
 
     return {
       position: [
-        -center.x * scale,
-        floorY - box.min.y * scale,
-        -center.z * scale,
+        -center.x * safeScale,
+        floorY - box.min.y * safeScale + modelOffsetY,
+        -center.z * safeScale,
       ] as [number, number, number],
-      scale,
+      scale: safeScale,
     };
-  }, [gltf.scene]);
+  }, [gltf.scene, modelHeight, modelMaxWidth, modelOffsetY]);
 
   useEffect(() => {
     onLoaded(src);
@@ -140,6 +155,9 @@ export function ProductModelViewer({
   autoRotate = false,
   isReady,
   label,
+  modelHeight = 1.92,
+  modelMaxWidth,
+  modelOffsetY = 0,
   onReady,
   src,
 }: ProductModelViewerProps) {
@@ -186,6 +204,9 @@ export function ProductModelViewer({
         <Suspense fallback={null}>
           {src ? (
             <ModelAsset
+              modelHeight={modelHeight}
+              modelMaxWidth={modelMaxWidth}
+              modelOffsetY={modelOffsetY}
               onLoaded={onReady}
               src={src}
             />
