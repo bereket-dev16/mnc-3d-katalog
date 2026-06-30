@@ -71,8 +71,9 @@ function ModelAsset({
   src,
 }: ModelAssetProps) {
   const gltf = useGLTF(src) as unknown as { scene: Group };
+  const scene = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const modelTransform = useMemo(() => {
-    const box = new Box3().setFromObject(gltf.scene);
+    const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
     const center = box.getCenter(new Vector3());
     const floorY = -1.05;
@@ -90,7 +91,7 @@ function ModelAsset({
       ] as [number, number, number],
       scale: safeScale,
     };
-  }, [gltf.scene, modelHeight, modelMaxWidth, modelOffsetY]);
+  }, [scene, modelHeight, modelMaxWidth, modelOffsetY]);
 
   useEffect(() => {
     onLoaded(src);
@@ -101,7 +102,7 @@ function ModelAsset({
       position={modelTransform.position}
       scale={modelTransform.scale}
     >
-      <primitive object={gltf.scene} />
+      <primitive object={scene} />
     </group>
   );
 }
@@ -216,11 +217,11 @@ export function ProductModelViewer({
       <Canvas
         camera={{ fov: 34, position: defaultCameraPosition }}
         className="stage-model-canvas"
-        dpr={[1, 1.25]}
+        dpr={[1, 1.75]}
         frameloop="demand"
         gl={{
           alpha: true,
-          antialias: false,
+          antialias: true,
           powerPreference: "high-performance",
           stencil: false,
         }}
